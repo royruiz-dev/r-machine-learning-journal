@@ -3507,16 +3507,6 @@ automl_models_h2o@leaderboard %&gt;%
 stacked_ensemble_h2o &lt;- h2o.loadModel(&quot;../03_ml_automated/modeling/h2o_models/StackedEnsemble_AllModels_AutoML_20201229_021944&quot;)
 
 predictions &lt;- h2o.predict(stacked_ensemble_h2o, newdata = as.h2o(test_tbl))</code></pre>
-<pre><code>## 
-  |                                                                                                          
-  |                                                                                                    |   0%
-  |                                                                                                          
-  |====================================================================================================| 100%
-## 
-  |                                                                                                          
-  |                                                                                                    |   0%
-  |                                                                                                          
-  |====================================================================================================| 100%</code></pre>
 <pre class="r"><code>predictions_tbl &lt;- predictions %&gt;% as_tibble()
 
 predictions_tbl</code></pre>
