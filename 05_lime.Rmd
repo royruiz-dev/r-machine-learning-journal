@@ -1,54 +1,392 @@
 ---
-title: "05 LIME"
-date: "2020-11-05"
+title: "05 Explaining Black-Box Models with LIME"
+date: "2021-01-02"
 output:
   html_document:
     toc: true
     toc_float: true
     df_print: paged
     collapsed: false
-    number_sections: true
+    number_sections: false
     toc_depth: 3
     #code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
+knitr::opts_chunk$set(fig.width=10,message=FALSE,warning=FALSE, cache=TRUE)
 ```
 
-**IMPORTANT:** You can delete everything in here and start fresh. You might want to start by not deleting anything above this line until you know what that stuff is doing.
 
-This is an `.Rmd` file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
+# **05 Explaining Black-Box Models with LIME**
 
-# My first post
+*Last compiled:* **`r Sys.Date()`**
 
-Last compiled: `r Sys.Date()`
 
-Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left. 
+Machine learning models are often considered “black boxes” due to their complex inner-workings. More advanced ML models such as random forests, gradient boosting machines (GBM), artificial neural networks (ANN), among others are typically more accurate for predicting nonlinear, faint, or rare phenomena. Unfortunately, more accuracy often comes at the expense of interpretability, and interpretability is crucial for business adoption, model documentation, regulatory oversight, and human acceptance and trust.
 
-## Second level header
+It’s often important to understand the ML model trained on a global scale, and also to zoom into local regions of the data or predictions and derive local explanations. Global interpretations help understand the inputs and their entire modeled relationship with the prediction target, but global interpretations can be highly approximate in some cases. Local interpretations help us understand model predictions for a single row of data or a group of similar rows.
 
-You can add more headers by adding more hashtags. These won't be put into the table of contents
+In order to do this, I use a package called `lime`, which stands for Local Interpretable Model-Agnostic Explanations. With the explanations executed through `lime`, we can:
 
-### third level header
+<ul>
+<li>Choose between competing models</li>
+<li>Detect and improve untrustworthy models</li>
+<li>Get insights into the model</li>
+</ul>
 
-Here's an even lower level header
+In other words, `lime` helps answer the fundamental question: <mark>Why should I trust the model?</mark>
 
-# My second post (note the order)
 
-Last compiled: `r Sys.Date()`
+**Goal**
 
-I'm writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom
+The objective of this session is to visualize the feature importance for single and multiple explanations. We can do this easily with the `plot_features()` and `plot_explanations()` functions; however, in this session, I recreate the both function with customized functions: `custom_plot_features()` and `custom_plot_explanations()`, respectively.
 
-# Adding R stuff
+I will be using an already provided HR employee attrition data set along with its definitions (source of raw data is linked below). I am also providing a script that helps process the HR data into something that's more readable. You may download the data and script in case you want to try this code on your own.
 
-So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the same place. 
+*Raw data source*:<br />
+```{r echo=FALSE}
 
-So, let's say you are learning how to make a histogram in R. For example, maybe you want to sample 100 numbers from a normal distribution with mean = 0, and standard deviation = 1, and then you want to plot a histogram. You can do this right here by using an r code block, like this:
+# multiple files
+xfun::embed_files(c('00_raw_data/datasets-1067-1925-WA_Fn-UseC_-HR-Employee-Attrition.csv',
+                   '00_raw_data/data_definitions.xlsx'),
+                  name = 'employee_attrition_data_and_definitions.zip')
+```
+
+
+*Script source*:<br />
+```{r echo=FALSE}
+
+# Processing Pipeline Script
+xfun::embed_file('00_scripts/data_processing_pipeline.R')
+```
+
+
+## Step 1: Load libraries
+
+As a first step, please load `tidyverse`, `tidyquant`, `recipes`, `readxl`, `h2o`, and `lime` libraries. For details on what these libraries offer, please refer to the comments in the code block below.
 
 ```{r}
-samples <- rnorm(100, mean=0, sd=1)
-hist(samples)
+# STEP 1: Load Libraries ---
+# Tidy, Transform, & Visualize
+library(tidyverse)
+#  library(tibble)    --> is a modern re-imagining of the data frame
+#  library(readr)     --> provides a fast and friendly way to read rectangular data like csv
+#  library(dplyr)     --> provides a grammar of data manipulation
+#  library(magrittr)  --> offers a set of operators which make your code more readable (pipe operator)
+#  library(tidyr)     --> provides a set of functions that help you get to tidy data
+#  library(stringr)   --> provides a cohesive set of functions designed to make working with strings as easy as possible
+#  library(ggplot2)   --> graphics
+
+library(tidyquant)    # Bringing business and financial analysis to the 'tidyverse'
+library(recipes)      # Extensible framework to create and preprocess design matrices
+library(readxl)       # Makes it easy to get data out of Excel and into R
+library(h2o)          # H2O modeling
+library(lime)         # Helps explain why black-box models should be trusted
 ```
 
-When you knit this R Markdown document, you will see that the histogram is printed to the page, along with the R code. This document can be set up to hide the R code in the webpage, just delete the comment (hashtag) from the cold folding option in the yaml header up top. For purposes of letting yourself see the code, and me see the code, best to keep it the way that it is. You'll learn that all of these things and more can be customized in each R code block.
+
+If you haven't installed these packages, please install them by calling `install.packages(`*[name_of_package]*`)` in the R console. After installing, run the above code block again.
+
+
+## Step 2: Load data and processing pipeline
+
+```{r eval=FALSE}
+# Load Data
+employee_attrition_tbl <- read_csv("00_raw_data/datasets-1067-1925-WA_Fn-UseC_-HR-Employee-Attrition.csv")
+definitions_raw_tbl    <- read_excel("00_raw_data/data_definitions.xlsx", sheet = 1, col_names = FALSE)
+
+# Processing Pipeline
+source("00_scripts/data_processing_pipeline.R")
+
+employee_attrition_readable_tbl <- process_hr_data_readable(employee_attrition_tbl, definitions_raw_tbl)
+```
+
+
+## Step 3: Specify response and predictor variables
+
+```{r}
+
+# Split into test and train
+set.seed(seed = 1113)
+split_obj <- rsample::initial_split(employee_attrition_readable_tbl, prop = 0.85,)
+
+# Assign training and test data
+train_readable_tbl <- rsample::training(split_obj)
+train_readable_tbl %>% glimpse()
+test_readable_tbl  <- rsample::testing(split_obj)
+test_readable_tbl %>% glimpse()
+
+
+# ML Preprocessing Recipe 
+recipe_obj <- recipe(Attrition ~ ., data = train_readable_tbl) %>%
+  step_zv(all_predictors()) %>%
+  step_mutate_at(c("JobLevel", "StockOptionLevel"), fn = as.factor) %>% 
+  prep()
+
+recipe_obj
+
+train_tbl <- bake(recipe_obj, new_data = train_readable_tbl)
+train_tbl %>% glimpse()
+test_tbl  <- bake(recipe_obj, new_data = test_readable_tbl)
+test_tbl %>% glimpse()
+```
+
+
+## Step 4: Initialize AutoML H2O / Open best model (previously saved)
+
+```{r eval=FALSE}
+h2o.init()
+
+automl_leader <- h2o.loadModel("00_h2o_models/05/StackedEnsemble_BestOfFamily_AutoML_20210102_134643")
+```
+
+
+## Step 5: Predict using leader model
+
+```{r eval=FALSE}
+predictions_tbl <- automl_leader %>% 
+  h2o.predict(newdata = as.h2o(test_tbl)) %>%
+  as.tibble() %>%
+  bind_cols(
+    test_tbl %>%
+      select(Attrition, EmployeeNumber)
+  )
+```
+```{r}
+predictions_tbl
+```
+
+
+## Step 6: Build an explainer with LIME
+
+This is the “recipe” for creating an explanation. It contains the ML model & feature distributions (bins) for the training data.`lime()` creates an “explainer” from the training data and model object. The returned object contains the ML model and the feature distributions for the training data.
+
+```{r}
+
+explainer <- train_tbl %>%
+  select(-Attrition) %>%
+  lime(
+    model           = automl_leader,
+    bin_continuous  = TRUE,
+    n_bins          = 4,
+    quantile_bins   = TRUE
+  )
+```
+
+
+## Step 7: Create an explanation with lime::explain()
+
+The LIME algorithm is comprised of 6 steps:
+<ol>
+<li>Given an observation, permute it to create replicated feature data with slight value modifications</li>
+<li>Compute similarity distance measure between original observation and permuted observations</li>
+<li>Apply selected machine learnign model to predict outcomes of permuted data</li>
+<li>Select m number of features to best describe predicted outcomes</li>
+<li>Fit a simple model to the permuted data, explaining the complex model outcome with m features from the permuted data weighted by its similarity to the original observation</li>
+<li>Use the resulting feature weights to explain local behaviour</li>
+</ol>
+
+```{r eval=FALSE}
+# Multiple Explanations
+explanation <- test_tbl %>%
+  slice(1:40) %>%
+  select(-Attrition) %>%
+  lime::explain(
+    # Pass our explainer object
+    explainer = explainer,
+    # Because it is a binary classification model: 1
+    n_labels   = 1,
+    # number of features to be returned
+    n_features = 8,
+    # number of localized linear models
+    n_permutations = 5000,
+    kernel_width   = 0.5
+  )
+```
+```{r}
+explanation %>%
+  as.tibble() %>%
+  select(feature:prediction) 
+
+# Convert explanation table to a tibble
+explanation %>% 
+  as.tibble()
+```
+
+
+## Step 8: Visualize feature importance with __custom__ functions
+
+```{r}
+# Function to change labels to title case
+label_title <- function(labels, multi_line = TRUE, sep = ': ') {
+  names(labels) <- names(labels) %>% str_to_title()
+  label_both(labels, multi_line, sep)
+}
+
+# Custom plot_features() function
+custom_plot_features <- function(explanation, ncol = ncol, cases = NULL) {
+  
+  category <- c('Supports', 'Contradicts')
+  
+  if (!is.null(cases)) {
+    explanation <- explanation[explanation$case %in% cases, , drop = FALSE]
+  }
+  if (nrow(explanation) == 0) stop("No explanations to plot", call. = FALSE)
+  
+  explanation$type <- factor(ifelse(sign(explanation$feature_weight) == 1, 
+                                    category[1], 
+                                    category[2]), levels = category)
+  
+  description <- explanation$case %>% 
+    paste0('_', explanation[['label']])
+  
+  desc_width <- max(nchar(description)) + 1
+  
+  description <- description %>% 
+    format(width = desc_width) %>% 
+    paste0(explanation$feature_desc)
+  
+  explanation$description <- description %>% 
+    factor(levels = description[explanation$feature_weight %>% 
+                                  abs() %>% order()])
+  explanation$case <- explanation$case %>% 
+    factor(explanation$case %>% 
+             unique())
+  
+  explanation$`Explanation fit` <- explanation$model_r2 %>% 
+    format(digits = 3)
+  explanation$probability <- explanation$label_prob %>% 
+    format(digits = 3)
+  
+  explanation$label <- explanation$label %>% 
+    factor(explanation$label[explanation$label_prob %>% 
+                               order(decreasing = TRUE)] %>% unique())
+    
+  explanation %>%
+    ggplot() +
+    facet_wrap(~ case + label + probability + `Explanation fit`, 
+               labeller = label_title, 
+               scales = 'free_y', 
+               ncol = ncol) +
+    geom_col(aes_(~description, ~feature_weight, fill = ~type)) +
+    coord_flip() +
+    scale_fill_manual(values = c('steelblue', 'firebrick'), 
+                      drop = FALSE) +
+    scale_x_discrete(labels = function(lab) substr(lab,
+                                                   desc_width + 1, 
+                                                   lab %>% nchar())) +
+    labs(y = 'Weight', 
+         x = 'Feature', 
+         fill = '') +
+    theme_minimal() +
+    theme(strip.text = element_text(face = 'bold', 
+                                    size = 9),
+          plot.margin = margin(15, 15, 15, 15),
+          legend.background = element_blank(),
+          legend.key = element_blank(),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          axis.ticks = element_blank(),
+          legend.position = 'bottom',
+          panel.spacing.y = unit(15, 'pt'),
+          strip.text.x = element_text(margin = margin(t = 2, b = 2), 
+                                      hjust = 0),
+          axis.title.y = element_text(margin = margin(r = 10)),
+          axis.title.x = element_text(margin = margin(t = 10)))
+}
+```
+```{r fig.height=8}
+# Visualize feature importance for single explanation with CUSTOM FUNCTION
+explanation %>% custom_plot_features(ncol = 1, cases = 1)
+```
+```{r fig.height=14}
+# Visualize feature importance for three explanations with CUSTOM FUNCTION
+explanation %>% custom_plot_features(ncol = 1, cases = c(1,21,35,37))
+```
+```{r}
+### PART 2 ###
+
+# Custom plot_explanations() function
+custom_plot_explanations <- function(explanation, ...) {
+  num_cases <- explanation$case %>% 
+    as.numeric() %>% 
+    unique()
+  if (!is.null(num_cases)) {
+    explanation$case <- explanation$case %>% 
+      factor(levels = num_cases %>% 
+               sort() %>% 
+               as.character())
+  }
+  
+  explanation$feature_desc <- explanation$feature_desc %>% 
+    factor(
+      levels = explanation$feature_desc[explanation$feature %>% 
+                                          order(explanation$feature_value)] %>% 
+        unique() %>% 
+        rev())
+  
+  p <- explanation %>% ggplot(aes_(~case, ~feature_desc)) +
+    geom_tile(aes_(fill = ~feature_weight)) +
+    scale_x_discrete('Case', expand = c(0, 0)) +
+    scale_y_discrete('Feature', expand = c(0, 0)) +
+    scale_fill_gradient2('Feature\nWeight', 
+                         low = 'firebrick', 
+                         mid = '#f7f7f7', 
+                         high = 'steelblue') +
+    theme_minimal() +
+    theme(
+      strip.text = element_text(face = 'bold', 
+                                size = 10),
+      plot.margin = margin(15, 15, 15, 15),
+      legend.background = element_blank(),
+      legend.key = element_blank(),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      axis.ticks = element_blank(),
+      panel.spacing.y = unit(15, 'pt'),
+      strip.text.x = element_text(margin = margin(t = 2, b = 2), 
+                                  hjust = 0),
+      axis.title.y = element_text(margin = margin(r = 10)),
+      axis.title.x = element_text(margin = margin(t = 10)),
+      panel.border = element_rect(fill = NA, 
+                                  colour = 'grey60', 
+                                  size = 0.75),
+      panel.grid = element_blank(),
+      legend.position = 'bottom',
+      axis.text.x = element_text(angle = 90, 
+                                 hjust = 1, 
+                                 vjust = 1))
+  if (is.null(explanation$label)) {
+    p
+  } else {
+    p + facet_wrap(~label, ...)
+  }
+}
+```
+```{r fig.height=14}
+# Visualize feature importance for multiple explanations with CUSTOM FUNCTION
+explanation %>% custom_plot_explanations()
+```
+
+
+## Step 9: Compare visualizations with standard LIME functions
+
+```{r fig.height=8}
+# Visualize feature importance for a single explanation
+case_1 <- explanation %>%
+  filter(case == 1)
+
+case_1 %>%
+  plot_features()
+```
+```{r fig.height=14}
+# Visualize feature importance for three explanations
+explanation %>% plot_features(ncol = 1, cases = c(1,21,35,37))
+```
+```{r fig.height=14}
+# Visualize feature importance for multiple explanations
+plot_explanations(explanation)
+```
+
+<hr>
+<center>This concludes the Explaining Black-Box Models with LIME section in `R`!<br /><br />Made with &hearts;<br />~Roy Ruiz~</center>

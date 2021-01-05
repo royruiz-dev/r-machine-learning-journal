@@ -1,55 +1,384 @@
 ---
 title: "01 Machine Learning Fundamentals"
-author: "Joschka Schwarz"
-date: "2020-11-05"
+author: "Roy Ruiz"
+date: "2020-12-19"
 output:
   html_document:
     toc: true
     toc_float: true
     df_print: paged
     collapsed: false
-    number_sections: true
+    number_sections: false
     toc_depth: 3
     #code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
+knitr::opts_chunk$set(fig.width=10,message=FALSE,warning=FALSE, cache=TRUE)
 ```
 
-**IMPORTANT:** You can delete everything in here and start fresh. You might want to start by not deleting anything above this line until you know what that stuff is doing.
 
-This is an `.Rmd` file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
+# **01 Machine Learning Fundamentals**
 
-# My first post
+*Last compiled:* **`r Sys.Date()`**
 
-Last compiled: `r Sys.Date()`
 
-Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left. 
+**Problem Statement**
+__An organization wants to know which companies are similar to each other to help in identifying potential customers of a SaaS software solution (e.g. Salesforce CRM or equivalent) in various segments of the market. The Sales Department is very interested in this analysis, which will help them more easily penetrate various market segments.__
 
-## Second level header
+I will be using stock prices in this analysis. Companies will be classified based on how their stocks trade using their daily stock returns (percentage movement from one day to the next). This analysis will help the organization determine which companies are related to each other (competitors and have similar attributes). 
 
-You can add more headers by adding more hashtags. These won't be put into the table of contents
+I'll be able to analyze the stock prices using unsupervised learning tools including K-Means and UMAP. Moreover, I will be using a combination of `kmeans()` to find groups and `umap()` to visualize similarity of daily stock returns.
 
-### third level header
 
-Here's an even lower level header
+**Goal**
 
-# My second post (note the order)
+The goal is to apply my knowledge on K-Means and UMAP along with `dplyr`, `ggplot2`, and `purrr` to create a visualization that identifies subgroups in the S&P 500 Index. I will specifically be applying the following:
 
-Last compiled: `r Sys.Date()`
+<ul>
+<li>Modeling: `kmeans()` and `umap()`</li>
+<li>Iteration: `purrr`</li>
+<li>Data Manipulation: `dplyr`, `tidyr`, and `tibble`</li>
+<li>Visualization: `ggplot2` (bonus `plotly`)</li>
+</ul>
 
-I'm writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom
 
-# Adding R stuff
+The work performed here is broken down into multiple steps as follows:
+<ol>
+<li>Load libraries</li>
+<li>Load data sets</li>
+<li>Convert stock prices to a standardized format (daily returns)</li>
+<li>Convert to User-Item Format</li>
+<li>Perform K-Means Clustering</li>
+<li>Find the optimal value of K</li>
+<li>Apply UMAP</li>
+<li>Combine K-Means and UMAP</li>
+</ol>
 
-So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the same place. 
 
-So, let's say you are learning how to make a histogram in R. For example, maybe you want to sample 100 numbers from a normal distribution with mean = 0, and standard deviation = 1, and then you want to plot a histogram. You can do this right here by using an r code block, like this:
+## Step 1: Load libraries
+
+As a first step, please load `tidyverse`, `tidyquant`, `broom` and `umap` libraries. For details on what these libraries offer, please refer to the comments in the code block below.
 
 ```{r}
-samples <- rnorm(100, mean=0, sd=1)
-hist(samples)
+# STEP 1: Load Libraries ---
+# install.packages("plotly")
+
+# Tidy, Transform, & Visualize
+library(tidyverse)
+#  library(tibble)    --> is a modern re-imagining of the data frame
+#  library(readr)     --> provides a fast and friendly way to read rectangular data like csv
+#  library(dplyr)     --> provides a grammar of data manipulation
+#  library(magrittr)  --> offers a set of operators which make your code more readable (pipe operator)
+#  library(tidyr)     --> provides a set of functions that help you get to tidy data
+#  library(stringr)   --> provides a cohesive set of functions designed to make working with strings as easy as possible
+#  library(ggplot2)   --> graphics
+
+library(tidyquant)    # Bringing business and financial analysis to the 'tidyverse'
+library(broom)        # Takes messy output and turns them into tidy tibbles
+library(umap)         # Uniform manifold approximation and projection - dimension reduction technique
+library(ggplot2)      # To access other themes for better plotting
+library(colorspace)   # For better selection of colors
 ```
 
-When you knit this R Markdown document, you will see that the histogram is printed to the page, along with the R code. This document can be set up to hide the R code in the webpage, just delete the comment (hashtag) from the cold folding option in the yaml header up top. For purposes of letting yourself see the code, and me see the code, best to keep it the way that it is. You'll learn that all of these things and more can be customized in each R code block.
+
+If you haven't installed these packages, please install them by calling `install.packages(`*[name_of_package]*`)` in the R console. After installing, run the above code block again.
+
+
+## Step 2: Load data sets
+
+I will be using stock prices in this analysis. Although an API can be used to retrieve stock prices, I am already providing the stock prices for every stock in the S&P 500 index. I will be working with a **sp_500_prices_tbl** and **sp_500_index_tbl** data sets (source of raw data is linked below). You may download the data in case you want to try this code on your own.
+
+
+*Raw data source*:<br />
+```{r echo=FALSE}
+
+# multiple files
+xfun::embed_files(c('00_raw_data/sp_500_prices_tbl.rds',
+                   '00_raw_data/sp_500_index_tbl.rds'), name = 'sp_500.zip')
+
+```
+
+
+The first data frame contains 1.2M observations. The most important columns for our analysis are:
+
+- `symbol`: The stock ticker symbol that corresponds to a company's stock price
+- `date`: The timestamp relating the symbol to the share price at that point in time
+- `adjusted`: The stock price, adjusted for any splits and dividends (we use this when analyzing stock data over long periods of time) 
+
+
+```{r}
+# STOCK PRICES
+sp_500_prices_tbl <- read_rds("00_raw_data/sp_500_prices_tbl.rds")
+sp_500_prices_tbl
+```
+
+
+The second data frame contains information about the stocks the most important of which are:
+
+- `company`: The company name
+- `sector`: The sector that the company belongs to
+
+```{r}
+# SECTOR INFORMATION
+sp_500_index_tbl <- read_rds("00_raw_data/sp_500_index_tbl.rds")
+sp_500_index_tbl
+```
+
+
+**Question**
+
+<mark>Which stock prices behave similarly?</mark>
+
+Answering this question with the use of clustering helps __understand the relationship between the companies__. This analysis will tell us which companies are competitors and which are likely in the same space (often called sectors) and can be categorized together.
+
+_Bottom line_: This analysis can help us better understand the dynamics of the market and competition, which is useful for all types of analyses from finance to sales to marketing.
+
+
+## Step 3: Convert stock prices to a standardized format (daily returns)
+
+The data needs to be converted to a different format known as a _"user-item"_ style matrix. The challenge here is to connect the dots between what we have and what we need to do to format it properly.
+
+In order to compare the data, it needs to be standardized or normalized. This is because values (in this case, stock prices) cannot be compared  when they are of completely different magnitudes. In order to standardize, the adjusted stock price (dollar value) is converted to daily returns (percent change from previous day). Here is the formula.
+
+$$ 
+return_{daily} = \frac{price_{i}-price_{i-1}}{price_{i-1}}
+$$
+
+As you may already know, we have stock prices for every stock in the [SP 500 Index](https://finance.yahoo.com/quote/%5EGSPC?p=%5EGSPC), which is the daily stock prices for over 500 stocks. As mentioned before, the data set is over 1.2M observations. 
+
+```{r}
+sp_500_prices_tbl %>% glimpse()
+```
+
+
+At first, a tibble named `sp_500_daily_returns_tbl` is created by performing the following operations:
+
+```{r}
+# Apply your data transformation skills!
+# Save as a variable named `sp_500_daily_returns_tbl`
+sp_500_daily_returns_tbl <- sp_500_prices_tbl %>%
+  # Select the `symbol`, `date` and `adjusted` columns  
+  select(symbol, date, adjusted) %>%
+  # Filter to dates beginning in the year 2018 and beyond
+  filter(year(date) >= 2018) %>%
+  # Compute a Lag of 1 day on the adjusted stock price
+  # Note: `symbol` must grouped first, otherwise lags are computed using values from previous stock 
+  group_by(symbol) %>%
+  mutate(lagged_by_1_day_adj_val = lag(adjusted, order_by = date)) %>%
+  # Remove `NA` values from the lagging operation
+  drop_na(lagged_by_1_day_adj_val) %>%
+  ungroup() %>%
+  # Compute the difference between adjusted and the lag
+  mutate(difference = adjusted - lagged_by_1_day_adj_val) %>%
+  # Compute percentage difference by dividing the difference by that lag
+  mutate(pct_return = difference / lagged_by_1_day_adj_val) %>%
+  # Return only the `symbol`, `date`, and `pct_return` columns
+  select(symbol, date, pct_return)
+
+sp_500_daily_returns_tbl
+```
+
+
+## Step 4: Convert to User-Item Format
+
+The daily returns (percentage change from one day to the next) can now be converted to a _"user-item"_ format. In this case, the user is the `symbol` (company), and the item is the `pct_return` at each `date`.
+
+```{r}
+# Convert to User-Item Format
+# Save the result as `stock_date_matrix_tbl`
+stock_date_matrix_tbl <- sp_500_daily_returns_tbl %>%
+  select(symbol, date, pct_return) %>%
+  # Spread the `date` column to get the values as percentage returns
+  # Make sure to fill an `NA` values with zeros
+  pivot_wider(names_from = date, values_from = pct_return, values_fill = 0) %>%
+  # Order by `symbol`
+  arrange(symbol) %>%
+  ungroup()
+
+stock_date_matrix_tbl
+```
+
+
+## Step 5: Perform K-Means Clustering
+
+Beginning with the `stock_date_matrix_tbl`, __K-Means clustering__ is performed as follows:
+
+```{r}
+# Create kmeans_obj for 4 centers
+# Save the result as `kmeans_obj`
+kmeans_obj <- stock_date_matrix_tbl %>%
+  # Drop the non-numeric column, `symbol`
+  select(-symbol) %>%
+  # Perform `kmeans()` with `centers = 4` and `nstart = 20`
+  kmeans(centers = 4, nstart = 20)
+
+# Apply glance() to get the `tot.withinss`
+glance(kmeans_obj)
+```
+
+
+## Step 6: Find the optimal value of K
+
+To perform this step, a __custom function__ called `kmeans_mapper()` is created. The goal here is to use `purrr` to iterate over many values of "k" using the `centers` argument.
+
+```{r}
+kmeans_mapper <- function(center = 3) {
+    stock_date_matrix_tbl %>%
+        select(-symbol) %>%
+        kmeans(centers = center, nstart = 20)
+}
+
+4 %>% kmeans_mapper() %>% glance()
+```
+
+
+```{r}
+# Implement purrr row-wise to map `kmeans_mapper()` and `glance()` functions
+# Create a tibble containing column called `centers` that go from 1 to 30
+# Save the output as `k_means_mapped_tbl`
+k_means_mapped_tbl <- tibble(centers = 1:30) %>%
+  # Add a column named `k_means` with the `kmeans_mapper()` output by mapping the centers to the function
+  mutate(k_means = centers %>% map(kmeans_mapper)) %>%
+  # We can apply broom::glance() row-wise with mutate() + map()
+  mutate(glance  = k_means %>% map(glance))
+
+k_means_mapped_tbl
+```
+
+
+The "tot.withinss" can be visualized from the glance output as a ___Scree Plot___:
+
+```{r}
+# The glance column contains tibbles that can be unnested
+# Begin with the `k_means_mapped_tbl
+k_means_mapped_tbl %>%
+  # Unnest the `glance` column
+  unnest(glance) %>%
+  select(centers, tot.withinss) %>%
+  # Visualize Scree Plot
+  # Plot the `centers` column (x-axis) versus the `tot.withinss` column (y-axis)
+  ggplot(aes(centers, tot.withinss)) +
+  geom_point(color = "#2E2E33", size = 2) +
+  geom_line(color = "#2E2E33", size = 0.75) +
+  # Add labels (which are repelled a little)
+  ggrepel::geom_label_repel(aes(label = centers), color = "#2E2E33", size = 4) + 
+  
+  # Formatting
+  labs(title = "Skree Plot",
+       subtitle = "Measures the distance each of the customer are from the closest K-Means center") +
+  theme_light()
+```
+
+
+The Scree Plot becomes linear (constant rate of change) between 5 and 10 centers for K.
+
+
+## Step 7: Apply UMAP
+
+In this step, the goal is to plot the `UMAP` 2D visualization to help investigate cluster assignments.
+
+```{r}
+# Apply `umap()` function to `stock_date_matrix_tbl`, which contains a user-item matrix in tibble format
+# Save results in `umap_results`
+umap_results <- stock_date_matrix_tbl %>%
+  # De-select the `symbol` column
+  select(-symbol) %>%
+  # Use the `umap()` function storing the output as `umap_results`
+  umap()
+
+# Convert `umap_results` to tibble with symbols
+# Save the results as `umap_results_tbl`
+# Combine `layout` from `umap_results` with `symbol` column from `stock_date_matrix_tbl`
+umap_results_tbl <- umap_results$layout %>%
+  # Convert from a `matrix` data type to a `tibble` with `as_tibble()`
+  as_tibble(.name_repair = "unique") %>% # argument is required to set names in the next step
+  set_names(c("x", "y")) %>%
+  # Bind the columns of the umap tibble with the `symbol` column from the `stock_date_matrix_tbl`
+  bind_cols(stock_date_matrix_tbl %>%
+              select(symbol))
+
+umap_results_tbl
+```
+
+
+Finally, a quick visualization of the `umap_results_tbl` follows:
+
+```{r}
+# Visualize UMAP results
+# Pipe the `umap_results_tbl` into `ggplot()` mapping the columns to x-axis and y-axis
+umap_results_tbl %>%
+  ggplot(aes(x, y)) +
+  # Add a `geom_point()` geometry with an `alpha = 0.5`
+  geom_point(alpha = 0.5, size = 2) +
+  # Apply `theme_tq()` and add a title "UMAP Projection"
+  theme_tq() +
+  labs(title = 'UMAP Projection')
+```
+
+
+The visualization shows distinct clusters. However, K-Means clusters still need to be combined with the UMAP 2D representation. 
+
+
+## Step 8: Combine K-Means and UMAP
+
+Here, the K-Means clusters and UMAP 2D representation are combined.
+
+```{r}
+# Pull out K-Means for 10 Centers; we use this since beyond this value the Scree Plot flattens
+# Get the k_means_obj from the 10th center
+k_means_obj <- k_means_mapped_tbl %>%
+  pull(k_means) %>%
+  pluck(10)
+# Store as k_means_obj
+```
+
+
+The clusters from the `k_means_obj` with the `umap_results_tbl` are combined next.
+
+
+```{r}
+# Use `dplyr` & `broom` to combine the `k_means_obj` with the `umap_results_tbl`
+# Convert it to a tibble with broom
+# Begin with the `k_means_obj`
+# Save the output as `umap_kmeans_results_tbl`
+kmeans_10_clusters_tbl <- k_means_obj %>% 
+  # Augment `k_means_obj` with `stock_date_matrix_tbl` to get clusters added to end of tibble
+  augment(stock_date_matrix_tbl) %>%
+  # Select just the `symbol` and `.cluster` columns
+  select(symbol, .cluster)
+
+# Bind data together
+# Left join result with `umap_results_tbl` by `symbol` column
+# Left join result with result of `sp_500_index_tbl` by `symbol` column
+umap_kmeans_results_tbl <- umap_results_tbl %>%
+  left_join(kmeans_10_clusters_tbl, by = 'symbol') %>%
+  left_join(sp_500_index_tbl %>% select(symbol, company, sector), by = 'symbol')
+
+umap_kmeans_results_tbl
+```
+
+
+Finally, the K-Means and UMAP results are plotted.
+
+
+```{r}
+# Visualize the combined K-Means and UMAP results
+# Begin with the `umap_kmeans_results_tbl`
+umap_kmeans_results_tbl %>%
+  # Use `ggplot()` mapping `V1`, `V2` and `color = .cluster`
+  ggplot(aes(x, y, color = .cluster)) +
+  # Geometries
+  # Add the `geom_point()` geometry with `alpha = 0.7`
+  geom_point(alpha = 0.7, size = 2) +
+  # Formatting
+  # Applying `rainbow_hcl` colors from colorspace library
+  scale_color_manual(values = c(rainbow_hcl(10))) +
+  labs(title = "Symbol Segmentation: 2D Projection",
+       subtitle = "UMAP 2D Projection with K-Means Cluster Assignment") +
+  theme_light() +
+  theme(legend.position = "none")
+```
+
+
+<center>This concludes the Machine Learning Fundamentals section in `R`!<br /><br />Made with &hearts;<br />~Roy Ruiz~</center>

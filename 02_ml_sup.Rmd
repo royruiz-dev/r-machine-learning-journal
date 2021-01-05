@@ -1,54 +1,259 @@
 ---
-title: "02 Supervised ML"
-date: "2020-11-05"
+title: "02 Supervised Machine Learning"
+date: "2020-12-23"
 output:
   html_document:
     toc: true
     toc_float: true
     df_print: paged
     collapsed: false
-    number_sections: true
+    number_sections: false
     toc_depth: 3
     #code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
+knitr::opts_chunk$set(fig.width=10,message=FALSE,warning=FALSE, cache=TRUE)
 ```
 
-**IMPORTANT:** You can delete everything in here and start fresh. You might want to start by not deleting anything above this line until you know what that stuff is doing.
 
-This is an `.Rmd` file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
+# **02 Supervised Machine Learning**
 
-# My first post
+*Last compiled:* **`r Sys.Date()`**
 
-Last compiled: `r Sys.Date()`
+Machine Learning is a necessary concept that opens a new world of possibilities in data analysis. I won't bore you with the theory, terminology, core algorithms, and application since there are plenty of online resources where the topic and subtopics are covered in detail. The scope of this session is __supervised__ machine learning. Moreover, I will focus on two types of linear models:
+<ol>
+<li>Linear Regression</li>
+<li>Generalized Linear Models (GLM) - Elastic Net</li>
+</ol>
 
-Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left. 
+Other models such as tree-based models and support vector machines are common in machine learning; however, it is not the scope of this session.
 
-## Second level header
 
-You can add more headers by adding more hashtags. These won't be put into the table of contents
+**Goal**
 
-### third level header
+The objective of this session is to build, evaluate, and visualize a machine learning linear regression model. Moreover, this session will follow these steps:
 
-Here's an even lower level header
+<ol>
+<li>Load libraries</li>
+<li>Import and load data</li>
+<li>Explore data</li>
+<li>Create features with __recipes__ package</li>
+<li>Bundle model(s) and recipe with __workflow__ package</li>
+<li>Evaluate model(s) with __yardstick__ package</li>
+<li>Visualize feature importance of model(s)</li>
+</ol>
 
-# My second post (note the order)
+I decided to fit two different linear regression models: (1) linear model and (2) GLMNET model for comparison and to show how one can perform better than the other.
 
-Last compiled: `r Sys.Date()`
+I will be using two data sets: `bike_orderlines` for data exploration and `bike_features_tbl` for modeling (source of raw data is linked below). You may download the data in case you want to try this code on your own.
 
-I'm writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom
+*Raw data source*:<br />
+```{r echo=FALSE}
 
-# Adding R stuff
+# multiple files
+xfun::embed_files(c('00_raw_data/bike_orderlines.rds',
+                   '00_raw_data/bike_features_tbl.rds'),
+                  name = 'bike_orderlines_and_features_data.zip')
+```
 
-So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the same place. 
 
-So, let's say you are learning how to make a histogram in R. For example, maybe you want to sample 100 numbers from a normal distribution with mean = 0, and standard deviation = 1, and then you want to plot a histogram. You can do this right here by using an r code block, like this:
+## Step 1: Load libraries
+
+As a first step, please load `tidyverse` and `tidymodels` libraries. For details on what these libraries offer, please refer to the comments in the code block below.
 
 ```{r}
-samples <- rnorm(100, mean=0, sd=1)
-hist(samples)
+# Load Libraries
+library(tidyverse)
+#  library(tibble)    --> is a modern re-imagining of the data frame
+#  library(readr)     --> provides a fast and friendly way to read rectangular data like csv
+#  library(dplyr)     --> provides a grammar of data manipulation
+#  library(magrittr)  --> offers a set of operators which make your code more readable (pipe operator)
+#  library(tidyr)     --> provides a set of functions that help you get to tidy data
+#  library(stringr)   --> provides a cohesive set of functions designed to make working with strings as easy as possible
+#  library(ggplot2)   --> graphics
+
+library(tidymodels)
+# library(rsample)    --> provides infrastructure for efficient data splitting, resampling and cross validation.
+# library(parsnip)    --> provides an API to many powerful modeling algorithms in R.
+# library(recipes)    --> tidy interface to data pre-processing (making statistical transformations) tools for feature engineering (prior to modeling).
+# library(workflows)  --> bundle your pre-processing, modeling, and post-processing together.
+# library(tune)       --> helps you optimize the hyperparameters of your model and pre-processing steps.
+# library(yardstick)  --> measures the effectiveness of models using performance metrics (metrics for model comparison).
+# library(broom)      --> converts the information in common statistical R objects into user-friendly, predictable formats.
+# library(dials)      --> creates and manages tuning parameters and parameter grids.
 ```
 
-When you knit this R Markdown document, you will see that the histogram is printed to the page, along with the R code. This document can be set up to hide the R code in the webpage, just delete the comment (hashtag) from the cold folding option in the yaml header up top. For purposes of letting yourself see the code, and me see the code, best to keep it the way that it is. You'll learn that all of these things and more can be customized in each R code block.
+
+If you haven't installed these packages, please install them by calling `install.packages(`*[name_of_package]*`)` in the R console. After installing, run the above code block again.
+
+
+## Step 2: Import and load data
+
+```{r eval=FALSE}
+# Load Data
+bike_orderlines_tbl <- readRDS("00_raw_data/bike_orderlines.rds")
+bike_features_tbl <- readRDS("00_raw_data/bike_features_tbl.rds")
+```
+```{r}
+# Glimpse the data
+bike_orderlines_tbl %>% glimpse()
+bike_features_tbl %>% glimpse()
+```
+
+
+## Step 3: Explore data
+
+```{r fig.height=12}
+# Explore Data
+model_sales_tbl <- bike_orderlines_tbl %>%
+  select(total_price, model, category_2, frame_material) %>%
+  
+  group_by(model, category_2, frame_material) %>%
+  summarise(total_sales = sum(total_price)) %>%
+  ungroup() %>%
+  
+  arrange(desc(total_sales))
+
+# Visualize
+model_sales_tbl %>%
+  mutate(category_2 = as_factor(category_2) %>% 
+           fct_reorder(total_sales, .fun = max) %>% 
+           fct_rev()) %>%
+  
+  ggplot(aes(frame_material, total_sales)) +
+  geom_violin() +
+  geom_jitter(width = 0.1, alpha = 0.5, color = "#2c3e50") +
+  #coord_flip() +
+  facet_wrap(~ category_2) +
+  scale_y_continuous(labels = scales::dollar_format(scale = 1e-6, suffix = "M", accuracy = 0.1)) +
+  tidyquant::theme_tq() +
+  labs(title = "Total Sales for Each Bike Model",
+       x = "Frame Material", y = "Revenue")
+```
+
+
+## Step 4: Create features with __recipes__ package
+
+```{r}
+# Select the features of interest
+bike_features_tbl <- bike_features_tbl %>% 
+  select(model:gender, 'Rear Derailleur', 'Shift Lever') 
+
+#  Create features with the recipes package
+set.seed(1234)
+split_obj <- rsample::initial_split(bike_features_tbl, prop   = 0.75)
+
+train_tbl <- training(split_obj)
+test_tbl  <- testing(split_obj)
+
+# Remove spaces and dashes from the column names
+train_tbl <- train_tbl %>% set_names(str_replace_all(names(train_tbl), " |-", "_"))
+test_tbl  <- test_tbl  %>% set_names(str_replace_all(names(test_tbl),  " |-", "_"))
+
+# Create the model recipe
+bike_recipe <- 
+  recipe(price  ~ ., data = train_tbl %>% select(-c(model:weight), -category_1, -c(category_3:gender))) %>%
+  step_novel(all_predictors(), -all_numeric()) %>%
+  step_dummy(all_nominal(), -all_outcomes()) %>%
+  step_zv(all_predictors())
+
+# View summary of recipe to ensure all necessary steps are laid out before model fitting
+bike_recipe %>% summary()
+```
+
+
+## Step 5: Bundle model(s) and recipe with __workflow__ package
+
+```{r}
+# Bundle the model and recipe with the workflow package and do fitting
+bike_fit <- function(model, recipe, train_data) {
+  workflow() %>% 
+    add_model(model) %>% 
+    add_recipe(recipe) %>%
+    fit(train_data)
+}
+
+#  Build a Complex Linear Regression Model
+lr_model <- linear_reg("regression") %>%
+  set_engine("lm")
+
+# Fit data to linear regression model
+bike_fit_lm <- lr_model %>% bike_fit(recipe = bike_recipe,
+                                     train_data = train_tbl)
+
+# Build an Elastic Net GLM Regularized Regression Model
+glmnet_model <- linear_reg(mode    = "regression", 
+                           penalty = 10, 
+                           mixture = 0.1) %>%
+  set_engine("glmnet")
+
+# Fit data to GLMNET model
+bike_fit_glm <- glmnet_model %>% bike_fit(recipe = bike_recipe,
+                                          train_data = train_tbl)
+```
+
+
+## Step 6: Evaluate model(s) with __yardstick__ package
+
+```{r}
+# Function to evaluate model with the yardstick package
+calc_metrics <- function(model, test_data) {
+  
+  model %>%
+    predict(test_data) %>%
+    bind_cols(test_data %>% select(price)) %>%
+    yardstick::metrics(truth = price, estimate = .pred)
+}
+
+# Compare test data predictions with actual values to get baseline model performance
+# Evaluate linear regression model metrics
+bike_fit_lm %>% calc_metrics(test_data = test_tbl)
+# Evaluate GLMNET model metrics
+bike_fit_glm %>% calc_metrics(test_data = test_tbl)
+```
+
+
+## Step 7: Visualize feature importance of model(s)
+
+```{r fig.height=18}
+# Visualize Feature Importance via Complex Linear Regression Model
+bike_fit_lm %>%
+  pull_workflow_fit() %>%
+  tidy() %>% na.omit() %>%
+  arrange(p.value) %>% 
+  mutate(term = as_factor(term) %>% fct_rev()) %>%
+  
+  ggplot(aes(x = estimate, y = term)) +
+  geom_point(color = "firebrick", size = 3) +
+  ggrepel::geom_label_repel(aes(label = scales::dollar(estimate, accuracy = 1, suffix = " €", prefix = "")),
+                            size = 4, fill = "white", color = "#2E2E33", direction = "both", nudge_x = T, nudge_y = T) +
+  scale_x_continuous(labels = scales::dollar_format(suffix = " €", prefix = "")) +
+  theme_minimal() +
+  labs(title = "Linear Regression: Feature Importance",
+       subtitle = "Complex Linear Regression Model",
+       x = "Estimate",
+       y = "Feature") 
+
+# Visualize Feature Importance via GLMNET Linear Regression Model
+bike_fit_glm %>%
+  pull_workflow_fit() %>%
+  tidy() %>%
+  # No p value here
+  arrange(desc(abs(estimate))) %>%
+  mutate(term = as_factor(term) %>% fct_rev()) %>%
+  
+  ggplot(aes(x = estimate, y = term)) +
+  geom_point(color = "firebrick", size = 3) +
+  ggrepel::geom_label_repel(aes(label = scales::dollar(estimate, accuracy = 1, suffix = " €", prefix = "")),
+                            size = 4, fill = "white", color = "#2E2E33", direction = "both", nudge_x = T, nudge_y = T) +
+  scale_x_continuous(labels = scales::dollar_format(suffix = " €", prefix = "")) +
+  theme_minimal() +
+  labs(title = "Linear Regression: Feature Importance",
+       subtitle = "Elastic Net GLM Regularized Regression Model",
+       x = "Estimate",
+       y = "Feature")
+```
+
+<hr>
+<center>This concludes the Supervised Machine Learning section in `R`!<br /><br />Made with &hearts;<br />~Roy Ruiz~</center>

@@ -1,13 +1,14 @@
 ---
-title: "03 Automated Machine Learning with H20"
-date: "2020-11-05"
+title: "03 Automated Machine Learning with H2O"
+author: "Roy Ruiz"
+date: "2020-12-29"
 output:
   html_document:
     toc: true
     toc_float: true
     df_print: paged
     collapsed: false
-    number_sections: true
+    number_sections: false
     toc_depth: 3
     #code_folding: hide
 ---
@@ -16,39 +17,603 @@ output:
 knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
 ```
 
-**IMPORTANT:** You can delete everything in here and start fresh. You might want to start by not deleting anything above this line until you know what that stuff is doing.
 
-This is an `.Rmd` file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
+# **03 Automated Machine Learning with H2O (I)**
 
-# My first post
+*Last compiled:* **`r Sys.Date()`**
 
-Last compiled: `r Sys.Date()`
 
-Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left. 
+The two parts within this section and the next section (Performance Measures) are arranged according to the CRISP-DM process model. CRISP-DM breaks the process of data analysis into six major phases:
 
-## Second level header
+<ol>
+<li>Business Understanding</li>
+<li>Data Understanding</li>
+<li>Data Preparation</li>
+<li>Modeling</li>
+<li>Evaluation</li>
+<li>Deployment</li>
+</ol>
 
-You can add more headers by adding more hashtags. These won't be put into the table of contents
+*Business Understanding* [1] and *Data Understanding* [2] are covered in the first part of this section.
 
-### third level header
+*Data Preparation* [3] and *Modeling* [4] are covered in the second part of this section, which introduces the use of automated machine learning with H2O. *Evaluation* [5] is covered extensively in the next section (Performance Measures). *Deployment* [6] is not covered in this journal.
 
-Here's an even lower level header
+Please note, I will be using an IBM Employee Attrition data set for [1-2] and a Product Backorders data set for [3-5].
 
-# My second post (note the order)
+**Problem**
 
-Last compiled: `r Sys.Date()`
+As many companies know, attrition is a problem that impacts all businesses, irrespective of geography, industry and size of the company. Employee attrition leads to significant costs for a business. Thus, there is great business interest in understanding the drivers of, and minimizing staff attrition.
 
-I'm writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom
+The following data set presents an employee survey from IBM, indicating if there is attrition or not. The data set contains approximately 1500 entries.
 
-# Adding R stuff
+While some level of attrition in a company is inevitable, minimizing it and being prepared for the cases that cannot be helped significantly improve the operations of most businesses.<br /><br />
 
-So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the same place. 
 
-So, let's say you are learning how to make a histogram in R. For example, maybe you want to sample 100 numbers from a normal distribution with mean = 0, and standard deviation = 1, and then you want to plot a histogram. You can do this right here by using an r code block, like this:
+<h5>True Cost of Employee Attrition</h5>
+
+Tying a financial figure to any business problem is essential to analyzing it. An Excel Employee Turnover Cost Calculator (provided below) can communicate the size of the problem financially. It is a great way to show others in an organization the true cost of losing good employees. It’s simple to use and most business professionals have Excel to easily review an organization’s cost of turnover with them. As shown below, an organization that loses 200 productive employees per year could have a hidden cost of $15M/year in lost productivity. On top of that, most organizations don’t realize it because productivity is a hidden cost.
+
+<center>
+![Employee Turnover Cost Calculator](./images/employee_turnover_cost_calculator.png){#id .class width=80% height=100%}<br />*Employee Turnover Cost Calculator*<br /><br />
+</center>
+
+<h5>CRISP Data Sciene Framework</h5>
+
+The work performed in the Automated Machine Learning with H2O and Performance Measures sections follows a data analysis process called CRISP-DM. CRISP-DM stands for "Cross-Industry Standard Process for Data Mining". It is an open standard process model that describes common approaches used by data mining experts.
+
+Following CRISP-DM guidelines, we start with a Business Understanding. It is an astoundingly common mistake to start projects without first properly defining the problem and objectives. This mistake is not specific to data analysis but is common to all types of problem-solving activities. As a result, all major problem-solving methodologies, including 8-D, six-sigma DMAIC and, of course, CRISP-DM, place first and stress the importance of Problem Definition or Business Understanding.
+
+In the end, H2O is used to determine the probability of a certain employee to fall into the condition of "attrition" and, thus, its high risk of leaving the company. Before we are able to do that, we need a profound understanding of the business and the data.
+
+<center>
+![CRISP-DM Framework](./images/crisp_dm_framework.png){#id .class width=80% height=100%}<br />*Cross-Industry Standard Process for Data Mining*<br /><br />
+</center>
+
+
+**Goal**
+
+The goal is to apply some level of understanding both from a business perspective and data perspective.
+
+The work performed in this section is broken down into multiple steps as follows:
+<ol>
+<li>Load libraries</li>
+<li>Load data and scripts</li>
+<li>Determine objective and assess situation</li>
+<li>Visualize the situation</li>
+<li>Explore and skim all data</li>
+<li>Perform data visualization</li>
+<li>Answer questions via feature exploration</li>
+</ol>
+
+As mentioned above, I will be working with an **Employee Attrition** data set (source of raw data is linked below). I have also provided scripts which are separate functions in order to process the data correctly for visualization. Finally, I have included a definitions table, which will be needed in the second part of this section.
+
+You may download the data, scripts, and definitions in case you want to try this code on your own.
+
+*Raw data source*:<br />
+```{r echo=FALSE}
+
+# Product Backorders dataset
+xfun::embed_file('00_raw_data/datasets-1067-1925-WA_Fn-UseC_-HR-Employee-Attrition.csv')
+
+```
+<br />
+
+*Script source*:<br />
+```{r echo=FALSE}
+# Assess Attrition Script
+xfun::embed_file('00_scripts/assess_attrition.R')
+```
+<br />
+```{r echo=FALSE}
+# Calculate Attrition Cost Script
+xfun::embed_file('00_scripts/calculate_attrition_cost.R')
+```
+<br />
+```{r echo=FALSE}
+# Count to Percentage Script
+xfun::embed_file('00_scripts/count_to_pct.R')
+```
+<br />
+```{r echo=FALSE}
+# Plot Attrition Script
+xfun::embed_file('00_scripts/plot_attrition.R')
+```
+<br />
+```{r echo=FALSE}
+# Plot ggpairs function and explore Features by category
+xfun::embed_file('00_scripts/plot_ggpairs.R')
+```
+<br />
+
+*Definitions table source*:<br />
+```{r echo=FALSE}
+
+# Definition table
+xfun::embed_file('00_raw_data/data_definitions.xlsx')
+
+```
+<br />
+
+<table border=1 bordercolor="#272A36" style="font-size:11px;">
+<thead>
+<tr><th style="padding:6px">**Name**</th><th style="padding:6px">**Description**</th></tr>
+</thead>
+<tbody>
+<tr><td style="padding:6px">*AGE*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*ATTRITION*</td><td style="padding:6px">(0=NO, 1=YES) - Employee leaving the company</td></tr>
+<tr><td style="padding:6px">*BUSINESS TRAVEL*</td><td style="padding:6px">(1=NO TRAVEL, 2=TRAVEL FREQUENTLY, 3=TRAVEL RARELY)</td></tr>
+<tr><td style="padding:6px">*DAILY RATE*</td><td style="padding:6px">Numerical Value - Salary Level</td></tr>
+<tr><td style="padding:6px">*DEPARTMENT*</td><td style="padding:6px">(1=HR, 2=R&D, 3=SALES)</td></tr>
+<tr><td style="padding:6px">*DISTANCE FROM HOME*</td><td style="padding:6px">Numerical Value - Distance from work to home</td></tr>
+<tr><td style="padding:6px">*EDUCATION*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*EDUCATION FIELD*</td><td style="padding:6px">(1=HR, 2=LIFE SCIENCES, 3=MARKETING, 4=MEDICAL SCIENCES, 5=OTHERS, 6=TECHNICAL)</td></tr>
+<tr><td style="padding:6px">*EMPLOYEE COUNT*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*EMPLOYEE NUMBER*</td><td style="padding:6px">Numerical Value - Employee identification</td></tr>
+<tr><td style="padding:6px">*ENVIROMENT SATISFACTION*</td><td style="padding:6px">Numerical Value - Satisfaction with the environment</td></tr>
+<tr><td style="padding:6px">*GENDER*</td><td style="padding:6px">(1=FEMALE, 2=MALE)</td></tr>
+<tr><td style="padding:6px">*HOURLY RATE*</td><td style="padding:6px">Numerical Value - Hourly salary</td></tr>
+<tr><td style="padding:6px">*JOB INVOLVEMENT*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*JOB LEVEL*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*JOB ROLE*</td><td style="padding:6px">(1=HC REP, 2=HR, 3=LAB TECHNICIAN, 4=MANAGER, 5=MANAGING DIRECTOR, 6=RESEARCH DIRECTOR, 7=RESEARCH SCIENTIST, 8=SALES EXECUTIEVE, 9=SALES REPRESENTATIVE)</td></tr>
+<tr><td style="padding:6px">*JOB SATISFACTION*</td><td style="padding:6px">Numerical Value - Satisfaction with the job</td></tr>
+<tr><td style="padding:6px">*MARITAL STATUS*</td><td style="padding:6px">(1=DIVORCED, 2=MARRIED, 3=SINGLE)</td></tr>
+<tr><td style="padding:6px">*MONTHLY INCOME*</td><td style="padding:6px">Numerical Value - Monthly salary</td></tr>
+<tr><td style="padding:6px">*MONTHLY RATE*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*NUMCOMPANIES WORKED*</td><td style="padding:6px">Numerical Value - Number of companies worked at</td></tr>
+<tr><td style="padding:6px">*OVER 18*</td><td style="padding:6px">(1=YES, 2=NO)</td></tr>
+<tr><td style="padding:6px">*OVERTIME*</td><td style="padding:6px">(1=NO, 2=YES)</td></tr>
+<tr><td style="padding:6px">*PERCENT SALARY HIKE*</td><td style="padding:6px">Numerical Value - Percentage increase in salary</td></tr>
+<tr><td style="padding:6px">*PERFORMANCE RATING*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*RELATIONS SATISFACTION*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*STANDARD HOURS*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*STOCK OPTIONS LEVEL*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*TOTAL WORKING YEARS*</td><td style="padding:6px">Numerical Value - Total years employee has worked</td></tr>
+<tr><td style="padding:6px">*TRAINING TIMES LAST YEAR*</td><td style="padding:6px">Numerical Value - Hours spent training</td></tr>
+<tr><td style="padding:6px">*WORK LIFE BALANCE*</td><td style="padding:6px">Numerical Value - Time spent between work and outside</td></tr>
+<tr><td style="padding:6px">*YEARS AT COMPANY*</td><td style="padding:6px">Numerical Value - Total number of years at the company</td></tr>
+<tr><td style="padding:6px">*YEARS IN CURRENT ROLE*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*YEARS SINCE LAST PROMOTION*</td><td style="padding:6px">Numerical Value</td></tr>
+<tr><td style="padding:6px">*YEARS WITH CURRENT MANAGER*</td><td style="padding:6px">Numerical Value - Years spent with the current manager</td></tr>
+</tbody>
+</table><br />
+
+
+## Step 1: Load libraries
+
+As a first step, please load `tidyverse`, `readxl`, `skimr`, and `GGally` libraries. For details on what these libraries offer, please refer to the comments in the code block below.
 
 ```{r}
-samples <- rnorm(100, mean=0, sd=1)
-hist(samples)
+# STEP 1: Load Libraries ---
+# Tidy, Transform, & Visualize
+library(tidyverse)
+#  library(tibble)    --> is a modern re-imagining of the data frame
+#  library(readr)     --> provides a fast and friendly way to read rectangular data like csv
+#  library(dplyr)     --> provides a grammar of data manipulation
+#  library(magrittr)  --> offers a set of operators which make your code more readable (pipe operator)
+#  library(tidyr)     --> provides a set of functions that help you get to tidy data
+#  library(stringr)   --> provides a cohesive set of functions designed to make working with strings as easy as possible
+#  library(ggplot2)   --> graphics
+
+library(readxl)       # reading excel files
+library(skimr)        # summary function that displays nicely in console
+library(GGally)       # extends 'ggplot2' to reduce complexity of combining geometric objects with transformed data
 ```
 
-When you knit this R Markdown document, you will see that the histogram is printed to the page, along with the R code. This document can be set up to hide the R code in the webpage, just delete the comment (hashtag) from the cold folding option in the yaml header up top. For purposes of letting yourself see the code, and me see the code, best to keep it the way that it is. You'll learn that all of these things and more can be customized in each R code block.
+
+If you haven't installed these packages, please install them by calling `install.packages(`*[name_of_package]*`)` in the R console. After installing, run the above code block again.
+
+## Step 2: Load data and scripts
+
+```{r}
+# Load data
+employee_attrition_tbl <- read_csv("00_raw_data/datasets-1067-1925-WA_Fn-UseC_-HR-Employee-Attrition.csv")
+
+path_data_definitions <- "00_raw_data/data_definitions.xlsx"
+definitions_raw_tbl   <- read_excel(path_data_definitions, sheet = 1, col_names = FALSE)
+
+# Function to convert counts to percentages
+source("00_scripts/count_to_pct.R")
+# Function to calculate attrition cost
+source("00_scripts/calculate_attrition_cost.R")
+# Function to assess attrition
+source("00_scripts/assess_attrition.R")
+# Function to plot attrition
+source("00_scripts/plot_attrition.R")
+# # Function to plot ggpairs function and explore Features by category
+source("00_scripts/plot_attrition.R")
+```
+
+
+## Step 3: Determine objective and assess situation
+
+```{r}
+# Data subset
+dept_job_role_tbl <- employee_attrition_tbl %>%
+  select(EmployeeNumber, Department, JobRole, PerformanceRating, Attrition)
+
+# Investigate objectives: 16 % Attrition
+# Analyze attrition from data
+dept_job_role_tbl %>%
+  
+  group_by(Attrition) %>%
+  summarize(n = n()) %>%
+  ungroup() %>%
+  mutate(pct = n / sum(n))
+
+# Synthesize outcomes: High Counts and High percentages
+# Hypothesize drivers: Job Role and Departments
+# Attrition by department
+dept_job_role_tbl %>%
+  
+  group_by(Department, Attrition) %>%
+  summarize(n = n()) %>%
+  ungroup() %>%
+  
+  group_by(Department) %>%
+  mutate(pct = n / sum(n))
+
+# Attrition by job role
+dept_job_role_tbl %>%
+  
+  group_by(Department, JobRole, Attrition) %>%
+  summarize(n = n()) %>%
+  ungroup() %>%
+  
+  group_by(Department, JobRole) %>%
+  mutate(pct = n / sum(n)) %>%
+  ungroup() %>%
+  
+  filter(Attrition %in% "Yes") %>%
+  arrange(desc(pct))
+```
+
+
+## Step 4: Visualize the situation
+
+```{r fig.width=10}
+# Visualize
+dept_job_role_tbl %>%
+  
+  # Select columnns
+  count(Department, JobRole, Attrition) %>%
+  count_to_pct(Department, JobRole) %>%
+  
+  assess_attrition(Attrition, attrition_value = "Yes", baseline_pct = 0.088) %>%
+  mutate(
+    cost_of_attrition = calculate_attrition_cost(n = n, salary = 80000)
+  ) %>%
+  
+  # Select columnns
+  plot_attrition(Department, JobRole, .value = cost_of_attrition,
+                 units = "M") +
+  labs(title = "Estimated Cost of Attrition by Job Role",
+       x = "Cost of Attrition",
+       y = "Department | Job Role",
+       subtitle = "Looks like Sales Executive and Labaratory Technician are the biggest drivers of cost"
+  )
+```
+
+
+## Step 5: Explore and skim all data
+
+```{r eval=FALSE}
+# Descriptive Features
+employee_attrition_tbl %>% select(Age, DistanceFromHome, Gender, MaritalStatus, NumCompaniesWorked, Over18)
+
+# Employment Features
+employee_attrition_tbl %>% select(Department, EmployeeCount, EmployeeNumber, JobInvolvement, JobLevel, JobRole, JobSatisfaction)
+
+# Compensation Features
+employee_attrition_tbl %>% select(Attrition, DailyRate, HourlyRate, MonthlyIncome, MonthlyRate, PercentSalaryHike, StockOptionLevel)
+
+# Survey Results
+employee_attrition_tbl %>% select(EnvironmentSatisfaction, JobSatisfaction, RelationshipSatisfaction, WorkLifeBalance)
+
+# Performance Data
+employee_attrition_tbl %>% select(JobInvolvement, PerformanceRating)
+
+# Work-Life Features
+employee_attrition_tbl %>% select(BusinessTravel, OverTime)
+
+# Training & Education
+employee_attrition_tbl %>% select(Education, EducationField, TrainingTimesLastYear)
+
+# Time-Based Features
+employee_attrition_tbl %>% select(TotalWorkingYears, YearsAtCompany, YearsInCurrentRole, YearsSinceLastPromotion, YearsWithCurrManager)
+```
+```{r}
+# Data skimming
+skim(employee_attrition_tbl)
+```
+
+
+## Step 6: Perform data visualization
+
+```{r fig.width=10, fig.height=10}
+# Visualize all data
+employee_attrition_tbl %>%
+  select(Attrition, Age, Gender, MaritalStatus, NumCompaniesWorked, Over18, DistanceFromHome) %>%
+  ggpairs() 
+```
+```{r fig.width=10, fig.height=10}
+# Create data tibble, to potentially debug the plot_ggpairs function (because it has a data argument)
+data <- employee_attrition_tbl %>%
+  select(Attrition, Age, Gender, MaritalStatus, NumCompaniesWorked, Over18, DistanceFromHome)
+
+employee_attrition_tbl %>%
+  select(Attrition, Age, Gender, MaritalStatus, NumCompaniesWorked, Over18, DistanceFromHome) %>%
+  plot_ggpairs(color = Attrition)
+```
+
+
+## Step 7: Answer questions via feature exploration
+
+```{r eval=FALSE}
+# Explore Features by Category
+
+#   1. Descriptive features: Age, Gender, Marital Status 
+employee_attrition_tbl %>%
+  select(Attrition, Age, Gender, MaritalStatus, NumCompaniesWorked, Over18, DistanceFromHome) %>%
+  plot_ggpairs(Attrition)
+
+#   2. Employment features: Department, Job Role, Job Level
+employee_attrition_tbl %>%
+  select(Attrition, contains("employee"), contains("department"), contains("job")) %>%
+  plot_ggpairs(Attrition) 
+
+#   3. Compensation features: Hourly Rate, Monthly Income, Stock Option Level 
+employee_attrition_tbl %>%
+  select(Attrition, contains("income"), contains("rate"), contains("salary"), contains("stock")) %>%
+  plot_ggpairs(Attrition)
+
+#   4. Survey Results: Satisfaction Level, Work Life Balance 
+employee_attrition_tbl %>%
+  select(Attrition, contains("satisfaction"), contains("life")) %>%
+  plot_ggpairs(Attrition)
+
+#   5. Performance Data: Job Involvement, Performance Rating
+employee_attrition_tbl %>%
+  select(Attrition, contains("performance"), contains("involvement")) %>%
+  plot_ggpairs(Attrition)
+
+#   6. Work-Life Features 
+employee_attrition_tbl %>%
+  select(Attrition, contains("overtime"), contains("travel")) %>%
+  plot_ggpairs(Attrition)
+
+#   7. Training and Education 
+employee_attrition_tbl %>%
+  select(Attrition, contains("training"), contains("education")) %>%
+  plot_ggpairs(Attrition)
+
+#   8. Time-Based Features: Years At Company, Years In Current Role
+employee_attrition_tbl %>%
+  select(Attrition, contains("years")) %>%
+  plot_ggpairs(Attrition)
+```
+<br />
+
+<h4>Challenge Questions</h4>
+<ol>
+<li><h5>*Compensation Features*</h5></li>
+**Question**:&nbsp;&nbsp;What can I deduce about the interaction between Monthly Income and Attrition?<br />
+**Answer**:&nbsp;&nbsp;&nbsp;&nbsp;<mark>C. Those that are leaving have a lower Monthly Income</mark><br /><br />
+<li><h5>*Compensation Features*</h5></li>
+**Question**:&nbsp;&nbsp;What can I deduce about the interaction between Percent Salary Hike and Attrition?<br />
+**Answer**:&nbsp;&nbsp;&nbsp;&nbsp;<mark>D. It's difficult to deduce anything based on the visualization</mark><br /><br />
+<li><h5>*Compensation Features*</h5></li>
+**Question**:&nbsp;&nbsp;What can I deduce about the interaction between Stock Option Level and Attrition?<br />
+**Answer**:&nbsp;&nbsp;&nbsp;&nbsp;<mark>C. It's difficult to deduce anything based on the visualization</mark><br /><br />
+<li><h5>*Survey Results*</h5></li>
+**Question**:&nbsp;&nbsp;What can I deduce about the interaction between Environment Satisfaction and Attrition?<br />
+**Answer**:&nbsp;&nbsp;&nbsp;&nbsp;<mark>A. A higher proportion of those leaving have a low environment satisfaction level</mark><br /><br />
+<li><h5>*Survey Results*</h5></li>
+**Question**:&nbsp;&nbsp;What can I deduce about the interaction between Work Life Balance and Attrition?<br />
+**Answer**:&nbsp;&nbsp;&nbsp;&nbsp;<mark>B. Those that are staying have a higher density of 2's and 3's</mark><br /><br />
+<li><h5>*Performance Data*</h5></li>
+**Question**:&nbsp;&nbsp;What can I deduce about the interaction between Job Involvement and Attrition?<br />
+**Answer**:&nbsp;&nbsp;&nbsp;&nbsp;<mark>A. Those that are leaving have a lower density of 3's and 4's</mark><br /><br />
+<li><h5>*Work-Life Features*</h5></li>
+**Question**:&nbsp;&nbsp;What can I deduce about the interaction between Over Time and Attrition?<br />
+**Answer**:&nbsp;&nbsp;&nbsp;&nbsp;<mark>B. The proportion of those staying that are working Over Time are high compared to those that are not staying</mark><br /><br />
+<li><h5>*Training and Education*</h5></li>
+**Question**:&nbsp;&nbsp;What can I deduce about the interaction between Training Times Last Year and Attrition?<br />
+**Answer**:&nbsp;&nbsp;&nbsp;&nbsp;<mark>B. People that leave tend to have less annual training</mark><br /><br />
+<li><h5>*Time-Based Features*</h5></li>
+**Question**:&nbsp;&nbsp;What can I deduce about the interaction between Years At Company and Attrition?<br />
+**Answer**:&nbsp;&nbsp;&nbsp;&nbsp;<mark>B. People that leave tend to have less working years at the company</mark><br /><br />
+<li><h5>*Time-Based Features*</h5></li>
+**Question**:&nbsp;&nbsp;What can I deduce about the interaction between Years Since Last Promotion and Attrition?<br />
+**Answer**:&nbsp;&nbsp;&nbsp;&nbsp;<mark>C. It's difficult to deduce anything based on the visualization</mark><br /><br />
+</ol><br />
+
+
+# **03 Automated Machine Learning with H2O (II)**
+
+*Last compiled:* **`r Sys.Date()`**
+
+
+**Goal**
+
+The goal is to predict whether or not a product will be put on 'backorder' status, given a number of product metrics such as current inventory, transit time, demand forecasts and prior sales. This is a classic Binary Classification problem, and I will use Automated Machine Leaning with H2O to tackle this problem.
+
+The work performed here is broken down into multiple steps as follows:
+<ol>
+<li>Load libraries</li>
+<li>Load training & test data sets</li>
+<li>Specify response and predictor variables</li>
+<li>Perform AutoML H2O specifying stopping criterion</li>
+<li>View the Leaderboard</li>
+<li>Save the leader model</li>
+<li>Predict using leader model</li>
+</ol>
+
+For this, I will be working with a **Product Backorders** data set (source of raw data is linked below). You may download the data in case you want to try this code on your own.
+
+*Raw data source*:<br />
+```{r echo=FALSE}
+
+# Product Backorders dataset
+xfun::embed_file('00_raw_data/product_backorders.csv')
+
+```
+
+
+## Step 1: Load libraries
+
+As a first step, please load `tidyverse` and `tidymodels` libraries. For details on what these libraries offer, please refer to the comments in the code block below.
+
+```{r}
+# STEP 1: Load Libraries ---
+# Tidy, Transform, & Visualize
+library(tidyverse)
+#  library(tibble)    --> is a modern re-imagining of the data frame
+#  library(readr)     --> provides a fast and friendly way to read rectangular data like csv
+#  library(dplyr)     --> provides a grammar of data manipulation
+#  library(magrittr)  --> offers a set of operators which make your code more readable (pipe operator)
+#  library(tidyr)     --> provides a set of functions that help you get to tidy data
+#  library(stringr)   --> provides a cohesive set of functions designed to make working with strings as easy as possible
+#  library(ggplot2)   --> graphics
+
+library(tidymodels)
+# library(rsample)    --> provides infrastructure for efficient data splitting, resampling and cross validation.
+# library(parsnip)    --> provides an API to many powerful modeling algorithms in R.
+# library(recipes)    --> tidy interface to data pre-processing (making statistical transformations) tools for feature engineering (prior to modeling).
+# library(workflows)  --> bundle your pre-processing, modeling, and post-processing together.
+# library(tune)       --> helps you optimize the hyperparameters of your model and pre-processing steps.
+# library(yardstick)  --> measures the effectiveness of models using performance metrics (metrics for model comparison).
+# library(broom)      --> converts the information in common statistical R objects into user-friendly, predictable formats.
+# library(dials)      --> creates and manages tuning parameters and parameter grids.
+
+library(h2o)          # H2O modeling
+
+```
+
+
+If you haven't installed these packages, please install them by calling `install.packages(`*[name_of_package]*`)` in the R console. After installing, run the above code block again.
+
+
+## Step 2: Load training & test data sets
+
+```{r calculation, eval=FALSE}
+product_backorders_tbl          <- read_csv("00_raw_data/product_backorders.csv")
+
+set.seed(seed = 1113)
+split_obj                       <- rsample::initial_split(product_backorders_tbl, prop = 0.75)
+train_readable_tbl              <- training(split_obj)
+test_readable_tbl               <- testing(split_obj)
+
+# We need to convert those columns to factors in the next step
+factor_names <- c("potential_issue", "deck_risk", "oe_constraint", 
+                  "ppap_risk", "stop_auto_buy", "rev_stop")
+```
+
+
+## Step 3: Specify response and predictor variables
+
+```{r}
+# Create recipe
+recipe_obj <- recipe(went_on_backorder ~., data = train_readable_tbl) %>% 
+  step_zv(all_predictors()) %>% 
+  step_mutate_at(factor_names, fn = as.factor) %>%
+  step_center(all_numeric()) %>%
+  step_scale(all_numeric()) %>%
+  step_dummy(all_nominal(),-all_outcomes()) %>% 
+  prep()
+
+# To finalize this process, bake the train & test data
+train_tbl <- bake(recipe_obj, new_data = train_readable_tbl)
+train_tbl %>% glimpse()
+
+test_tbl <- bake(recipe_obj, new_data = test_readable_tbl)
+test_tbl %>% glimpse()
+```
+
+
+## Step 4: Perform AutoML H2O specifying stopping criterion
+
+```{r eval=FALSE}
+# H2O modeling cluster initialization
+h2o.init()
+
+# Split data into a training and a validation data frame
+# Setting the seed is just for reproducibility
+split_h2o <- h2o.splitFrame(as.h2o(train_tbl), ratios = c(0.75), seed = 1435)
+train_h2o <- split_h2o[[1]]
+valid_h2o <- split_h2o[[2]]
+test_h2o  <- as.h2o(test_tbl)
+
+# Set the target and predictors
+y <- "went_on_backorder"
+x <- setdiff(names(train_h2o), y)
+
+# Run AutoML
+automl_models_h2o <- h2o.automl(x = x,
+                                y = y,
+                                training_frame    = train_h2o,
+                                validation_frame  = valid_h2o,
+                                leaderboard_frame = test_h2o,
+                                max_runtime_secs  = 30,
+                                nfolds            = 5)
+```
+
+
+## Step 5: View the Leaderboard
+
+```{r}
+# Inspect the leaderboard
+typeof(automl_models_h2o)
+slotNames(automl_models_h2o)
+automl_models_h2o@leaderboard 
+```
+```{r eval=FALSE}
+automl_models_h2o@leader
+```
+```{r}
+# Extract leader model from the leaderboard
+# automl_models_h2o@leader gives you the same output
+h2o.getModel("StackedEnsemble_AllModels_AutoML_20210105_210409")
+```
+
+
+## Step 6: Save the leader model
+
+```{r eval=FALSE}
+# Extracts an H2O model name by a position so can more easily use h2o.getModel()
+extract_h2o_model_name_by_position <- function(h2o_leaderboard, n = 1, verbose = T) {
+  
+  model_name <- h2o_leaderboard %>%
+    as.tibble() %>%
+    slice(n) %>%
+    pull(model_id)
+  
+  if (verbose) message(model_name)
+  
+  return(model_name)
+  
+}
+
+# Save the leader model by extracting from leaderboard
+automl_models_h2o@leaderboard %>% 
+  extract_h2o_model_name_by_position(1) %>% 
+  h2o.getModel() %>%
+  h2o.saveModel(path = "00_h2o_models/03/")
+```
+
+
+## Step 7: Predict using leader model
+
+```{r eval=FALSE}
+# Loading top H2O model
+stacked_ensemble_h2o <- h2o.loadModel("00_h2o_models/03/StackedEnsemble_AllModels_AutoML_20210105_210409")
+
+predictions <- h2o.predict(stacked_ensemble_h2o, newdata = as.h2o(test_tbl))
+```
+```{r}
+predictions_tbl <- predictions %>% as_tibble()
+
+predictions_tbl
+```
+
+<hr>
+<center>This concludes the Automated Machine Learning with H2O section in `R`!<br /><br />Made with &hearts;<br />~Roy Ruiz~</center>
