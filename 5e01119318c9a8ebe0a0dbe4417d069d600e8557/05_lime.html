@@ -410,7 +410,7 @@ div.tocify {
 
 <div id="explaining-black-box-models-with-lime" class="section level1">
 <h1><strong>05 Explaining Black-Box Models with LIME</strong></h1>
-<p><em>Last compiled:</em> <strong>2021-09-07</strong></p>
+<p><em>Last compiled:</em> <strong>2021-09-08</strong></p>
 <p>Machine learning models are often considered “black boxes” due to their complex inner-workings. More advanced ML models such as random forests, gradient boosting machines (GBM), artificial neural networks (ANN), among others are typically more accurate for predicting nonlinear, faint, or rare phenomena. Unfortunately, more accuracy often comes at the expense of interpretability, and interpretability is crucial for business adoption, model documentation, regulatory oversight, and human acceptance and trust.</p>
 <p>It’s often important to understand the ML model trained on a global scale, and also to zoom into local regions of the data or predictions and derive local explanations. Global interpretations help understand the inputs and their entire modeled relationship with the prediction target, but global interpretations can be highly approximate in some cases. Local interpretations help us understand model predictions for a single row of data or a group of similar rows.</p>
 <p>In order to do this, I use a package called <code>lime</code>, which stands for Local Interpretable Model-Agnostic Explanations. With the explanations executed through <code>lime</code>, we can:</p>
