@@ -3,10 +3,8 @@ output:
   html_document:
     css: style.css
 navbar:
-  title: "MyLabJournal"
+  title: "Machine Learning Journal by Roy Ruiz"
   left:
-    - text: "Index"
-      href: index.html
     - text: "Journal"
       menu:
             - text: "01 Machine Learning Fundamentals"
@@ -19,10 +17,6 @@ navbar:
               href: 04_perf_meas.html
             - text: "05 LIME"
               href: 05_lime.html
-            - text: "06 Deep Learning"
-              href: 06_dl.html
-    - text: "Class notes"
-      href: 07_class_notes.html
     - text: "Links"
       href: 08_links.html
 output_dir: "5e01119318c9a8ebe0a0dbe4417d069d600e8557"

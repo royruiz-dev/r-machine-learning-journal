@@ -1,5 +1,5 @@
 ---
-title: "MyLabJournal"
+title: "ML Journal"
 output: html_document
 ---
 
@@ -7,16 +7,19 @@ output: html_document
 
 ![](images/logo.png)
 
-# **My Lab Journal**
+# **Journal**
 
-This is a template example for lab journaling. Students in the data science courses at the Institute of Entrepreneurship will use this template to learn R for business analytics. Students can replace this text as they wish.
+This journal includes the use of many Machine Learning concepts and techniques in different problem sectors written in `R`. You may visit each topic individually by clicking on the corresponding link below or by selecting from the drop-down menu above. Within each page, you will see a detailed markdown highlighting the process, code, and results.
 
-## How to use
+This is part of the Institute of Entrepreneurship within the Hamburg University of Technology where `R` is learned and implemented for business analytics. Code is hosted in a private repository in GitHub.
 
-1. Accept the assignment and get your own github repo.
+## Topics
+<ol>
+<li>[Machine Learning Fundamentals](https://tuhhstartupengineers.github.io/ml_journal-royruiz/5e01119318c9a8ebe0a0dbe4417d069d600e8557/01_ml_fund.html)</li>
+<li>[Supervised Machine Learning](https://tuhhstartupengineers.github.io/ml_journal-royruiz/5e01119318c9a8ebe0a0dbe4417d069d600e8557/02_ml_sup.html)</li>
+<li>[Automated Machine Learning with H20](https://tuhhstartupengineers.github.io/ml_journal-royruiz/5e01119318c9a8ebe0a0dbe4417d069d600e8557/03_ml_aut.html)</li>
+<li>[Performance Measures](https://tuhhstartupengineers.github.io/ml_journal-royruiz/5e01119318c9a8ebe0a0dbe4417d069d600e8557/04_perf_meas.html)</li>
+<li>[Local Interpretable Model-agnostic Explanations (LIME)](https://tuhhstartupengineers.github.io/ml_journal-royruiz/5e01119318c9a8ebe0a0dbe4417d069d600e8557/05_lime.html)</li>
+</ol>
 
-2. Blog/journal what you are doing in R, by editing the `.Rmd` files. 
-
-3. See the links page for lots of helpful links on learning R.
-
-4. Change everything to make it your own.
+<center>Made with &hearts;<br />~Roy Ruiz~</center>
