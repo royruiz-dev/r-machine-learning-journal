@@ -15,11 +15,11 @@ This is part of the Institute of Entrepreneurship within the Hamburg University 
 
 ## Topics
 <ol>
-<li>[Machine Learning Fundamentals](https://royruizzy.github.io/MachineLearning_R-Journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/01_ml_fund.html)</li>
-<li>[Supervised Machine Learning](https://royruizzy.github.io/MachineLearning_R-Journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/02_ml_sup.html)</li>
-<li>[Automated Machine Learning with H2O Framework](https://royruizzy.github.io/MachineLearning_R-Journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/03_ml_aut.html)</li>
-<li>[Performance Measures](https://royruizzy.github.io/MachineLearning_R-Journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/04_perf_meas.html)</li>
-<li>[Local Interpretable Model-agnostic Explanations (LIME)](https://royruizzy.github.io/MachineLearning_R-Journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/05_lime.html)</li>
+<li>[Machine Learning Fundamentals](https://royruiz-dev.github.io/ml-journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/01_ml_fund.html)</li>
+<li>[Supervised Machine Learning](https://royruiz-dev.github.io/ml-journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/02_ml_sup.html)</li>
+<li>[Automated Machine Learning with H2O Framework](https://royruiz-dev.github.io/ml-journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/03_ml_aut.html)</li>
+<li>[Performance Measures](https://royruiz-dev.github.io/ml-journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/04_perf_meas.html)</li>
+<li>[Local Interpretable Model-agnostic Explanations (LIME)](https://royruiz-dev.github.io/ml-journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/05_lime.html)</li>
 </ol>
 
 <center>Made with &hearts;<br />~Roy Ruiz~</center>
