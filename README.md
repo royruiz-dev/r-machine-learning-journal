@@ -24,6 +24,6 @@ It reflects the use of `R` for business analytics, focusing on real-world data a
 4. [Performance Measures](https://royruiz-dev.github.io/ml-journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/04_perf_meas.html)
 5. [Local Interpretable Model-agnostic Explanations (LIME)](https://royruiz-dev.github.io/ml-journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/05_lime.html)
 
-<center>
+<p align="center">
 Made with ♥<br />~Roy Ruiz~
-</center>
+</p>
