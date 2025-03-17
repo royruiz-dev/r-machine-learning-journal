@@ -9,9 +9,11 @@ output: html_document
 
 # **Journal**
 
-This journal includes the use of many Machine Learning concepts and techniques in different problem sectors written in `R`. You may visit each topic individually by clicking on the corresponding link below or by selecting from the drop-down menu above. Within each page, you will see a detailed markdown highlighting the process, code, and results.
 
-This is part of the Institute of Entrepreneurship within the Hamburg University of Technology where `R` is learned and implemented for business analytics. Code is hosted in a private repository in GitHub.
+
+This journal showcases the application of various Machine Learning concepts and techniques across different problem sectors, implemented using `R`. You may visit each topic individually by clicking on the corresponding link below or by selecting from the drop-down menu above. Within each page, you will see a detailed markdown highlighting the process, code, and results.
+
+It reflects the use of `R` for business analytics, focusing on real-world data analysis and solutions.
 
 ## Topics
 <ol>
