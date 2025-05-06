@@ -4,13 +4,16 @@
 
 ### Machine Learning Journal
 
-This journal showcases the application of various Machine Learning concepts and techniques across different problem sectors, implemented using `R`. You may visit each topic individually by clicking on the corresponding link below or by selecting from the drop-down menu above. Within each page, you will see a detailed markdown highlighting the process, code, and results.
+A collection of applied machine learning topics implemented in `R`, focused on real-world data across diverse problem domains.
 
-It reflects the use of `R` for business analytics, focusing on real-world data analysis and solutions.
+Explore each topic individually using the links below or the drop-down menu within the journal. Each section includes detailed explanations, code, and results.
+
+> 🔒 **Password required to access the full journal**  
+> Request access via [LinkedIn](https://www.linkedin.com/in/royruiz083/) or [email](mailto:ask.royruiz@gmail.com)
 
 <p align="center">
   <a href="https://royruiz-dev.github.io/r-machine-learning-journal/journal_encrypted.html">
-    <img src="https://img.shields.io/badge/Click%20to%20view%20ML%20Journal-27B9CE?style=for-the-badge&logo=github" alt="Go to ML Journal">
+    <img src="https://img.shields.io/badge/Click%20to%20View%20ML%20Journal-27B9CE?style=for-the-badge&logo=github" alt="Go to ML Journal">
   </a>
 </p>
 
@@ -23,5 +26,6 @@ It reflects the use of `R` for business analytics, focusing on real-world data a
 5. [Local Interpretable Model-agnostic Explanations (LIME)](https://royruiz-dev.github.io/r-machine-learning-journal/5e01119318c9a8ebe0a0dbe4417d069d600e8557/05_lime.html)
 
 <p align="center">
-Made with ♥<br />~Roy Ruiz~
+  Made with ♥
+  <br />~Roy Ruiz~
 </p>
